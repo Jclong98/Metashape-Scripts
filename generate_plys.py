@@ -83,7 +83,9 @@ def generate_ply(filepath, output_dir):
 
     if chunk.transform.matrix:
         T = chunk.transform.matrix
-        s = math.sqrt(T[0, 0] ** 2 + T[0, 1] ** 2 + T[0, 2] ** 2)  # scaling # T.scale()
+        s = math.sqrt(
+            T[0, 0] ** 2 + T[0, 1] ** 2 + T[0, 2] ** 2
+        )  # scaling # T.scale()
         S = Metashape.Matrix().Diag([s, s, s, 1])  # scale matrix
     else:
         S = Metashape.Matrix().Diag([1, 1, 1, 1])
@@ -93,11 +95,13 @@ def generate_ply(filepath, output_dir):
             [R[0, 0], R[0, 1], R[0, 2], C[0]],
             [R[1, 0], R[1, 1], R[1, 2], C[1]],
             [R[2, 0], R[2, 1], R[2, 2], C[2]],
-            [0, 0, 0,                      1],
+            [0, 0, 0, 1],
         ]
     )
 
-    chunk.transform.matrix = S * T.inv()  # resulting chunk transformation matrix
+    chunk.transform.matrix = (
+        S * T.inv()
+    )  # resulting chunk transformation matrix
 
     print("FINISHED ALIGNING COORDINATE SYSTEM BOUNDING BOX")
 
@@ -146,7 +150,9 @@ arg = sys.argv[1]
 
 if os.path.isdir:
     print("generating plys for", arg)
-    generate_batch(os.path.join(arg, "clipped"), os.path.join(arg, "plot_plys"))
+    generate_batch(
+        os.path.join(arg, "clipped"), os.path.join(arg, "plot_plys")
+    )
 else:
     print("generating single ply")
     generate_ply(

@@ -2,21 +2,22 @@ import pandas as pd
 import pptk
 import plyfile
 
+
 def render(filepath):
 
     # read ply file as a dataframe
-    data = plyfile.PlyData.read(filepath)['vertex']
+    data = plyfile.PlyData.read(filepath)["vertex"]
     df = pd.DataFrame(
         data={
-            'x':data['x'],
-            'y':data['y'],
-            'z':data['z'],
-            'r':data['red'],
-            'g':data['green'],
-            'b':data['blue'],
-            'nx':data['nx'],
-            'ny':data['ny'],
-            'nz':data['nz'],
+            "x": data["x"],
+            "y": data["y"],
+            "z": data["z"],
+            "r": data["red"],
+            "g": data["green"],
+            "b": data["blue"],
+            "nx": data["nx"],
+            "ny": data["ny"],
+            "nz": data["nz"],
         }
     )
 
@@ -40,23 +41,20 @@ def render(filepath):
     # df['y'] = df['y'] * scale
     # df['z'] = df['z'] * scale
 
-    # # setting the minimum value for all axes to 0 
+    # # setting the minimum value for all axes to 0
     # df['x'] = df['x'] + abs(min(df['x']))
     # df['y'] = df['y'] + abs(min(df['y']))
     # df['z'] = df['z'] + abs(min(df['z']))
 
-    v = pptk.viewer(
-        df[['x', 'y', 'z']], 
-    )
+    v = pptk.viewer(df[["x", "y", "z"]],)
 
-    v.attributes(
-        df[['r', 'g', 'b']] / 255, 
-    )
+    v.attributes(df[["r", "g", "b"]] / 255,)
 
     v.set(point_size=0.001)
 
+
 if __name__ == "__main__":
-    
+
     import sys
 
     render(sys.argv[1])
