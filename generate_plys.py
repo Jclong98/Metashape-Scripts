@@ -1,8 +1,11 @@
 import csv
 import datetime
+import math
 import os
 import sys
 import tkinter.filedialog as fd
+
+print("before metashape?????????")
 
 import Metashape
 
@@ -23,7 +26,7 @@ def generate_ply(filepath, output_dir):
     # building path to save to
     basename = os.path.basename(filepath)
     basename = os.path.splitext(basename)[0]
-    filename = basename + '.ply'
+    filename = basename + ".ply"
     save_path = os.path.join(output_dir, filename)
     print("################################################")
     print(save_path)
@@ -33,12 +36,25 @@ def generate_ply(filepath, output_dir):
     chunk = Metashape.app.document.addChunk()
     chunk.label = basename
 
-    with open(filepath, 'r') as csvfile:
+    with open(filepath, "r") as csvfile:
         csvreader = csv.DictReader(csvfile)
-        # paths = [row['filepath'].replace("Images", "Images_no_exif") for row in csvreader]
-        # paths = [row['filepath'] for row in csvreader]
-        paths = [row['filepath'] for row in csvreader if "gopro" not in row['filepath'].lower()]
 
+        n1_paths = []
+        n2_paths = []
+        n3_paths = []
+
+        for row in csvreader:
+            if "gopro" not in row["filepath"].lower():
+                if "n1" in row["filepath"].lower():
+                    n1_paths.append(row["filepath"])
+
+                if "n2" in row["filepath"].lower():
+                    n2_paths.append(row["filepath"])
+
+                if "n3" in row["filepath"].lower():
+                    n3_paths.append(row["filepath"])
+
+    paths = n2_paths + n3_paths + n1_paths
 
     # add photos from csv here
     chunk.addPhotos(paths)
@@ -51,12 +67,44 @@ def generate_ply(filepath, output_dir):
     chunk.crs = Metashape.CoordinateSystem()
 
     # Perform image matching for the chunk frame.
-    chunk.matchPhotos(accuracy=Metashape.HighAccuracy, generic_preselection=True, reference_preselection=False, tiepoint_limit=10000)
+    chunk.matchPhotos(
+        accuracy=Metashape.HighAccuracy,
+        generic_preselection=True,
+        reference_preselection=False,
+        tiepoint_limit=10000,
+    )
 
     chunk.alignCameras()
 
+    print("ALIGNING COORDINATE SYSTEM BOUNDING BOX")
+    # https://github.com/agisoft-llc/metashape-scripts/blob/master/src/coordinate_system_to_bounding_box.py
+    R = chunk.region.rot  # Bounding box rotation matrix
+    C = chunk.region.center  # Bounding box center vector
+
+    if chunk.transform.matrix:
+        T = chunk.transform.matrix
+        s = math.sqrt(T[0, 0] ** 2 + T[0, 1] ** 2 + T[0, 2] ** 2)  # scaling # T.scale()
+        S = Metashape.Matrix().Diag([s, s, s, 1])  # scale matrix
+    else:
+        S = Metashape.Matrix().Diag([1, 1, 1, 1])
+
+    T = Metashape.Matrix(
+        [
+            [R[0, 0], R[0, 1], R[0, 2], C[0]],
+            [R[1, 0], R[1, 1], R[1, 2], C[1]],
+            [R[2, 0], R[2, 1], R[2, 2], C[2]],
+            [0, 0, 0, 1],
+        ]
+    )
+
+    chunk.transform.matrix = S * T.inv()  # resulting chunk transformation matrix
+
+    print("FINISHED ALIGNING COORDINATE SYSTEM BOUNDING BOX")
+
     # Generate depth maps for the chunk.
-    chunk.buildDepthMaps(quality=Metashape.MediumQuality, filter=Metashape.AggressiveFiltering)
+    chunk.buildDepthMaps(
+        quality=Metashape.MediumQuality, filter=Metashape.AggressiveFiltering
+    )
 
     # generating the cloud
     chunk.buildDenseCloud()
@@ -65,6 +113,7 @@ def generate_ply(filepath, output_dir):
     chunk.exportPoints(save_path)
 
     print("done processing. point cloud exported to " + output_dir)
+
 
 def generate_batch(run_dir, output_dir):
     """
@@ -84,7 +133,7 @@ def generate_batch(run_dir, output_dir):
 
     for root, dirs, files in os.walk(run_dir):
         for f in files:
-            if f.endswith('.csv') and 'plot' in f.lower():
+            if f.endswith(".csv") and "plot" in f.lower():
                 generate_ply(os.path.join(root, f), output_dir)
                 files_processed += 1
 
@@ -96,12 +145,10 @@ def generate_batch(run_dir, output_dir):
 arg = sys.argv[1]
 
 if os.path.isdir:
-    generate_batch(
-        os.path.join(arg, "clipped"),
-        os.path.join(arg, "plot_plys")
-    )
+    print("generating plys for", arg)
+    generate_batch(os.path.join(arg, "clipped"), os.path.join(arg, "plot_plys"))
 else:
+    print("generating single ply")
     generate_ply(
-        arg,
-        os.path.join(os.path.split(os.path.split(arg)[0])[0], 'plot_plys')
+        arg, os.path.join(os.path.split(os.path.split(arg)[0])[0], "plot_plys")
     )
