@@ -89,5 +89,5 @@ chunk.buildDepthMaps(quality=Metashape.MediumQuality, filter=Metashape.Aggressiv
 # generating the cloud
 chunk.buildDenseCloud()
 
-# saving
+# saving point cloud
 chunk.exportPoints(save_path)
