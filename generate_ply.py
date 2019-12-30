@@ -105,5 +105,5 @@ chunk.buildDepthMaps(
 # generating the cloud
 chunk.buildDenseCloud()
 
-# saving point cloud
+# saving point cloud 
 chunk.exportPoints(save_path)
